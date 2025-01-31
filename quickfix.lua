@@ -203,6 +203,21 @@ end
 
 local pattern = ""
 
+function preBackspace(bp)
+    if bp ~= qfixPane then return true end
+    pattern = pattern:sub(1,-2)
+    micro.InfoBar():Message("search (backtick to cancel): "..pattern)
+    return false
+end
+
+-- Resets the pattern directly; it does not perform `DeleteWordLeft`.
+function preDeleteWordLeft(bp)
+    if bp ~= qfixPane then return true end
+    pattern = ""
+    micro.InfoBar():Message("search (backtick to cancel): ")
+    return false
+end
+
 function onRune(bp, r)
     if bp ~= qfixPane then return end
 
