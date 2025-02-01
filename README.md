@@ -57,3 +57,11 @@ List all declarations in go file:
 **Set parsecursor=true in config to enable jumping to the file location.**
 
 Jumps to the file under cursor and back.
+
+#### fjump_prev
+
+Jumps to the location of the previous entry in the qfix pane.
+
+#### fjump_next
+
+Jumps to the location of the next entry in the qfix pane.

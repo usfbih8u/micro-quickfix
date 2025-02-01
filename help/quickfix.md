@@ -1,7 +1,7 @@
 # Quickfix plugin
 
 Executes external command and shows the command output in qfix pane.
-qfix pane allows to jump to the file location. 
+qfix pane allows to jump to the file location.
 
 qfix pane has incremental search as you type. Use backtick to reset the search.
 
@@ -24,6 +24,14 @@ Placeholders:
 fjump
 
     Jumps between qfix pane and file locations.
+
+fjump_prev
+
+    Jumps to the location of the previous entry in the qfix pane.
+
+fjump_next
+
+    Jumps to the location of the next entry in the qfix pane.
 
 ## Example bindings
 

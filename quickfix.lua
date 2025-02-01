@@ -12,10 +12,13 @@ local os = import("os")
 function init()
     config.MakeCommand("fexec", execLine, config.NoComplete)
     config.MakeCommand("fjump", jumpToFile, config.NoComplete)
+    config.MakeCommand("fjump_next", jumpToNextEntry, config.NoComplete)
+    config.MakeCommand("fjump_prev", jumpToPrevEntry, config.NoComplete)
     config.AddRuntimeFile("quickfix", config.RTHelp, "help/quickfix.md")
 end
 
 local qfixPane = nil
+local qfixFresh = false -- Indicates if qfixPane was just created
 local tab = nil
 local active = 0
 
@@ -29,6 +32,7 @@ function execExit(output, _)
     b.Type.Readonly = true
     micro.CurPane():HSplitIndex(b, true)
     qfixPane = micro.CurPane()
+    qfixFresh = true
     tab = micro.CurTab()
     local tabs = micro.Tabs()
     active = tabs:Active()
@@ -98,6 +102,7 @@ function execLine(bp, args)
     if name == "qfix" then
         qfixPane:Quit()
         qfixPane = nil
+        qfixFresh = false
         return
     end
 
@@ -192,9 +197,102 @@ function jumpToFile(bp, _)
     bp:Center()
 end
 
+local DIRECTION = { PREV = -1, NEXT = 1 }
+
+function jumpToEntry(bp, direction)
+    if qfixPane == nil then
+        micro.InfoBar():Error("quickfix: no qfix pane")
+        return
+    end
+
+    local limit
+    if     direction == DIRECTION.PREV then limit = -1
+    elseif direction == DIRECTION.NEXT then limit = qfixPane.Buf:LinesNum()
+    else error("quickfix: invalid direction for jumpToEntry") end
+
+    local cursor = qfixPane.Cursor
+    local startingLine = qfixFresh == true and cursor.Y or cursor.Y + direction
+    qfixFresh = false
+    if startingLine == limit then
+        if direction == DIRECTION.PREV then
+             micro.InfoBar():Error("quickfix: no previous entry in quickfix list")
+        else micro.InfoBar():Error("quickfix: no next entry in quickfix list") end
+        return
+    end
+
+    -- Search new valid line in the 'direction'
+    local fname = ""
+    for i = startingLine, limit, direction do
+        cursor.Y = i -- always update
+        local line = qfixPane.Buf:Line(i)
+        local splits = strings.SplitN(line, ":", 2)
+
+        if #splits > 0 then -- line candidate
+            local _, err = os.Stat(splits[1])
+            if not err then -- 1st split is a file
+                local regexes = {
+                    "[^:]+:[0-9]+:[0-9]+:",
+                    "[^:]+:[0-9]+:",
+                    -- Avoid stop in errors/warnings without row and column
+                    -- "[^:]+:", "[^ \t].*",
+                }
+
+                for j=1, #regexes do
+                    local rex = regexp.MustCompile(regexes[j])
+                    fname = rex:FindString(line)
+                    if fname ~= "" then
+                        fname = strings.TrimSuffix(fname, ":")
+                        break
+                    end
+                end
+                if fname ~= "" then break end
+            end
+        end
+    end
+
+    -- No file was found inside the loop
+    if fname == "" then
+        if direction == DIRECTION.PREV then
+             micro.InfoBar():Error("quickfix: no previous entry in quickfix list")
+        else micro.InfoBar():Error("quickfix: no next entry in quickfix list") end
+        return
+    end
+
+    local plainfname = strings.Split(fname, ":")[1]
+    local absfname = filepath.Abs(plainfname)
+    local absfnameWithPos = absfname..strings.TrimPrefix(fname, plainfname)
+    micro.Log("plainfname:", plainfname, "absfnameWithPos:", absfnameWithPos)
+    micro.InfoBar():Message(fname)
+
+    local tabs = micro.Tabs()
+    for i = 1,#tabs.List do
+        for j = 1,#tabs.List[i].Panes do
+            local name = tabs.List[i].Panes[j]:Name()
+            local absname = tabs.List[i].Panes[j].Buf.AbsPath
+            micro.Log("tab", i, "pane", i, "absname", absname)
+            if absfname == absname then
+                micro.Log("set active:", name)
+                tabs:SetActive(i-1)
+                tabs.List[i]:SetActive(j-1)
+                tabs.List[i].Panes[j]:SetActive(true)
+                tabs.List[i].Panes[j]:HandleCommand("open "..absfnameWithPos)
+                return
+            end
+        end
+    end
+
+    micro.Log("fname: "..absfnameWithPos)
+    bp:HandleCommand("tab "..absfnameWithPos)
+    bp:Center()
+end
+
+function jumpToPrevEntry(bp, _) jumpToEntry(bp, DIRECTION.PREV) end
+function jumpToNextEntry(bp, _) jumpToEntry(bp, DIRECTION.NEXT) end
+
 function onQuit(p)
     if p == qfixPane then
         qfixPane = nil
+        qfixFresh = false
     end
 end
 
