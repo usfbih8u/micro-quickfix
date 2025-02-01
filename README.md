@@ -60,10 +60,10 @@ List all declarations in go file:
 
 Jumps to the file under cursor and back.
 
-#### quickfix prev
+### quickfix prev
 
 Jumps to the location of the previous entry in the qfix pane.
 
-#### quickfix next
+### quickfix next
 
 Jumps to the location of the next entry in the qfix pane.
