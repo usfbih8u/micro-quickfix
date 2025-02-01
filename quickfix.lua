@@ -300,6 +300,12 @@ function preDeleteWordLeft(bp)
     return false
 end
 
+function preInsertNewline(bp)
+    if bp ~= qfixPane then return true end
+    jumpToFile(bp)
+    return false
+end
+
 function onRune(bp, r)
     -- This maintains qfix as qfix, solving issues with buffer replacements
     if qfixPane and qfixPane:Name() ~= qfixName then
