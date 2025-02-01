@@ -19,7 +19,7 @@ local qfixPane = nil
 local tab = nil
 local active = 0
 
-function execExit(output, args)
+function execExit(output, _)
     if qfixPane ~= nil then
         qfixPane:Quit()
     end
@@ -53,22 +53,20 @@ end
 
 function execArgs(bp, args)
     local c = bp.Cursor
-    local cmd = ""
-    cmd = strings.Join(args, " ")
+    local cmd = strings.Join(args, " ")
 
     if strings.Contains(cmd, "{s}") then
         if c:HasSelection() then
-            sel = c:GetSelection()
+            local sel = c:GetSelection()
             cmd = strings.Replace(cmd, "{s}", sel, 1)
         end
     end
 
     if strings.Contains(cmd, "{w}") then
-        local sel = ""
         if not c:HasSelection() then
             c:SelectWord()
         end
-        sel = c:GetSelection()
+        local sel = c:GetSelection()
         cmd = strings.Replace(cmd, "{w}", sel, 1)
     end
 
@@ -110,7 +108,7 @@ function execLine(bp, args)
     end
 end
 
-function jumpToFile(bp, args)
+function jumpToFile(bp, _)
     local name = ""
     local p = micro.CurPane()
     if p ~= nil then
@@ -136,13 +134,13 @@ function jumpToFile(bp, args)
         return
     end
 
-    local fi, err = os.Stat(arr[1])
+    local _, err = os.Stat(arr[1])
     if err ~= nil then
         micro.InfoBar():Error("no filename at current pos")
         return
     end
 
-    rex = regexp.MustCompile("[^:]+:[0-9]+:[0-9]+:")
+    local rex = regexp.MustCompile("[^:]+:[0-9]+:[0-9]+:")
     local fname = rex:FindString(line)
     if fname == "" then
         rex = regexp.MustCompile("[^:]+:[0-9]+:")
@@ -175,11 +173,11 @@ function jumpToFile(bp, args)
     local tabs = micro.Tabs()
     for i = 1, #tabs.List do
         for j = 1, #tabs.List[i].Panes do
-            local name = tabs.List[i].Panes[j]:Name()
+            local panename = tabs.List[i].Panes[j]:Name()
             local absname = tabs.List[i].Panes[j].Buf.AbsPath
             micro.Log("tab", i, "pane", i, "absname", absname)
             if absfname == absname then
-                micro.Log("set active:", name)
+                micro.Log("set active:", panename)
                 tabs:SetActive(i - 1)
                 tabs.List[i]:SetActive(j - 1)
                 tabs.List[i].Panes[j]:SetActive(true)
@@ -235,7 +233,7 @@ function onRune(bp, r)
     local bufstart = buffer.Loc(0, 0)
     local bufend = buffer.Loc(0, 1000000)
     local from = buffer.Loc(c.X, c.Y)
-    found, res, err = bp.Buf:FindNext(pattern, bufstart, bufend, from, true, false)
+    local found, res, _ = bp.Buf:FindNext(pattern, bufstart, bufend, from, true, false)
     if not res then return end
 
     local loc = buffer.Loc(0, found[1].Y)
