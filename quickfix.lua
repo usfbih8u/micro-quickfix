@@ -9,14 +9,6 @@ local regexp = import("regexp")
 local filepath = import("filepath")
 local os = import("os")
 
-function init()
-    config.MakeCommand("fexec", execLine, config.NoComplete)
-    config.MakeCommand("fjump", jumpToFile, config.NoComplete)
-    config.MakeCommand("fjump_next", jumpToNextEntry, config.NoComplete)
-    config.MakeCommand("fjump_prev", jumpToPrevEntry, config.NoComplete)
-    config.AddRuntimeFile("quickfix", config.RTHelp, "help/quickfix.md")
-end
-
 local qfixName = "qfix"
 local qfixPane = nil
 local qfixNeverJumped = false
@@ -338,4 +330,58 @@ function onRune(bp, r)
     local loc = buffer.Loc(0, found[1].Y)
     c:GotoLoc(loc)
     bp:Relocate()
+end
+
+local qfixCmds = {
+    ["exec"] = execLine,
+    ["jump"] = jumpToFile,
+    ["next"] = jumpToNextEntry,
+    ["prev"] = jumpToPrevEntry,
+}
+
+local function qfixCompleter(buf)
+    local opts = {}
+
+    --Do NOT autocomplete after first argument
+    local args = strings.Split(buf:Line(0), " ")
+    if #args > 2 then return nil, nil end
+
+    for k, _ in pairs(qfixCmds) do table.insert(opts, k) end
+
+    local suggestions = {}
+    local completions = {}
+    local lastArg = args[#args]
+
+    for i = 1, #opts do
+        local opt = opts[i]
+        local startIdx, endIdx = string.find(opt, lastArg, 1, true)
+        if endIdx and startIdx == 1 then
+            local completion = string.sub(opt, endIdx + 1, #opt)
+            table.insert(completions, completion)
+            table.insert(suggestions, opt)
+        end
+    end
+
+    return completions, suggestions
+end
+
+function quickfixEntry(bp, argsUserdata)
+    local opt = argsUserdata[1]
+    local cmd = qfixCmds[opt]
+    if not cmd then
+        micro.InfoBar():Error("quickfix: Unknown command: " .. opt)
+        return
+    end
+
+    -- WARN: args is only used with `exec`
+    local args = {}
+    if opt == "exec" then
+        for i = 2, #argsUserdata do table.insert(args, argsUserdata[i]) end
+    end
+    cmd(bp, args)
+end
+
+function init()
+    config.MakeCommand("quickfix", quickfixEntry, qfixCompleter)
+    config.AddRuntimeFile("quickfix", config.RTHelp, "help/quickfix.md")
 end
