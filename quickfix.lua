@@ -18,7 +18,7 @@ function init()
 end
 
 local qfixPane = nil
-local qfixFresh = false -- Indicates if qfixPane was just created
+local qfixNeverJumped = false
 local tab = nil
 local active = 0
 
@@ -32,7 +32,7 @@ function execExit(output, _)
     b.Type.Readonly = true
     micro.CurPane():HSplitIndex(b, true)
     qfixPane = micro.CurPane()
-    qfixFresh = true
+    qfixNeverJumped = true
     tab = micro.CurTab()
     local tabs = micro.Tabs()
     active = tabs:Active()
@@ -102,7 +102,7 @@ function execLine(bp, args)
     if name == "qfix" then
         qfixPane:Quit()
         qfixPane = nil
-        qfixFresh = false
+        qfixNeverJumped = false
         return
     end
 
@@ -193,6 +193,7 @@ function jumpToFile(bp, _)
     end
 
     micro.Log("fname: " .. absfnameWithPos)
+    qfixNeverJumped = false
     bp:HandleCommand("tab " .. absfnameWithPos)
     bp:Center()
 end
@@ -211,8 +212,10 @@ function jumpToEntry(bp, direction)
     else error("quickfix: invalid direction for jumpToEntry") end
 
     local cursor = qfixPane.Cursor
-    local startingLine = qfixFresh == true and cursor.Y or cursor.Y + direction
-    qfixFresh = false
+    local neverJumped = qfixNeverJumped
+    local startingLine = qfixNeverJumped == true and cursor.Y or cursor.Y + direction
+    qfixNeverJumped = false -- set to false now in case we return early.
+
     if startingLine == limit then
         if direction == DIRECTION.PREV then
              micro.InfoBar():Error("quickfix: no previous entry in quickfix list")
@@ -259,30 +262,24 @@ function jumpToEntry(bp, direction)
     end
 
     local plainfname = strings.Split(fname, ":")[1]
-    local absfname = filepath.Abs(plainfname)
-    local absfnameWithPos = absfname..strings.TrimPrefix(fname, plainfname)
-    micro.Log("plainfname:", plainfname, "absfnameWithPos:", absfnameWithPos)
+    local plainfnameWithPos = plainfname..strings.TrimPrefix(fname, plainfname)
+    micro.Log("plainfname:", plainfname, "plainfnameWithPos:", plainfnameWithPos)
     micro.InfoBar():Message(fname)
 
-    local tabs = micro.Tabs()
-    for i = 1,#tabs.List do
-        for j = 1,#tabs.List[i].Panes do
-            local name = tabs.List[i].Panes[j]:Name()
-            local absname = tabs.List[i].Panes[j].Buf.AbsPath
-            micro.Log("tab", i, "pane", i, "absname", absname)
-            if absfname == absname then
-                micro.Log("set active:", name)
-                tabs:SetActive(i-1)
-                tabs.List[i]:SetActive(j-1)
-                tabs.List[i].Panes[j]:SetActive(true)
-                tabs.List[i].Panes[j]:HandleCommand("open "..absfnameWithPos)
-                return
-            end
+    -- NOTE: If we are in the same tab as `qfixPane` and `fjump_next` or `fjump_prev` are
+    -- used, then another tab is created to open the necessary buffers there. This way,
+    -- the panes in the same tab as `qfixPane` are not modified.
+    micro.Log("fname: "..plainfnameWithPos)
+    if qfixPane == micro.CurPane() or neverJumped then --same tab as `qfixPane`
+        bp:HandleCommand("tab "..plainfnameWithPos)
+    elseif not neverJumped then
+        if bp.Buf.Path == plainfname then
+            local linenum = plainfnameWithPos:sub(#plainfname + 2, #plainfnameWithPos)
+            bp:HandleCommand("goto " .. linenum)
+        else
+            bp:HandleCommand("open " .. plainfnameWithPos)
         end
     end
-
-    micro.Log("fname: "..absfnameWithPos)
-    bp:HandleCommand("tab "..absfnameWithPos)
     bp:Center()
 end
 
@@ -292,7 +289,7 @@ function jumpToNextEntry(bp, _) jumpToEntry(bp, DIRECTION.NEXT) end
 function onQuit(p)
     if p == qfixPane then
         qfixPane = nil
-        qfixFresh = false
+        qfixNeverJumped = false
     end
 end
 
