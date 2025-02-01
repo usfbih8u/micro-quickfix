@@ -17,6 +17,7 @@ function init()
     config.AddRuntimeFile("quickfix", config.RTHelp, "help/quickfix.md")
 end
 
+local qfixName = "qfix"
 local qfixPane = nil
 local qfixNeverJumped = false
 local tab = nil
@@ -27,7 +28,7 @@ function execExit(output, _)
         qfixPane:Quit()
     end
 
-    local b = buffer.NewBuffer(output, "qfix")
+    local b = buffer.NewBuffer(output, qfixName)
     b.Type.Scratch = true
     b.Type.Readonly = true
     micro.CurPane():HSplitIndex(b, true)
@@ -99,7 +100,7 @@ function execLine(bp, args)
     if p ~= nil then
         name = p:Name()
     end
-    if name == "qfix" then
+    if name == qfixName then
         qfixPane:Quit()
         qfixPane = nil
         qfixNeverJumped = false
@@ -116,17 +117,14 @@ end
 function jumpToFile(bp, _)
     local name = ""
     local p = micro.CurPane()
-    if p ~= nil then
-        name = p:Name()
-    end
-    if name ~= "qfix" then
-        if qfixPane ~= nil then
-            qfixPane:SetActive(false)
-            tab:SetActive(1)
-            local tabs = micro.Tabs()
-            tabs:SetActive(active)
-            return
-        end
+    if p ~= nil then name = p:Name() end
+
+    if name ~= qfixName and qfixPane then
+        qfixPane:SetActive(false)
+        tab:SetActive(1)
+        local tabs = micro.Tabs()
+        tabs:SetActive(active)
+        return
     end
 
     local c = bp.Cursor
@@ -311,6 +309,12 @@ function preDeleteWordLeft(bp)
 end
 
 function onRune(bp, r)
+    -- This maintains qfix as qfix, solving issues with buffer replacements
+    if qfixPane and qfixPane:Name() ~= qfixName then
+        qfixPane = nil
+        return
+    end
+
     if bp ~= qfixPane then return end
 
     local s = tostring(r)
