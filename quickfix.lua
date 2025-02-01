@@ -240,7 +240,7 @@ function jumpToEntry(bp, direction)
                     -- "[^:]+:", "[^ \t].*",
                 }
 
-                for j=1, #regexes do
+                for j = 1, #regexes do
                     local rex = regexp.MustCompile(regexes[j])
                     fname = rex:FindString(line)
                     if fname ~= "" then
@@ -262,14 +262,14 @@ function jumpToEntry(bp, direction)
     end
 
     local plainfname = strings.Split(fname, ":")[1]
-    local plainfnameWithPos = plainfname..strings.TrimPrefix(fname, plainfname)
+    local plainfnameWithPos = plainfname .. strings.TrimPrefix(fname, plainfname)
     micro.Log("plainfname:", plainfname, "plainfnameWithPos:", plainfnameWithPos)
     micro.InfoBar():Message(fname)
 
     -- NOTE: If we are in the same tab as `qfixPane` and `fjump_next` or `fjump_prev` are
     -- used, then another tab is created to open the necessary buffers there. This way,
     -- the panes in the same tab as `qfixPane` are not modified.
-    micro.Log("fname: "..plainfnameWithPos)
+    micro.Log("fname: " .. plainfnameWithPos)
     if qfixPane == micro.CurPane() or neverJumped then --same tab as `qfixPane`
         bp:HandleCommand("tab "..plainfnameWithPos)
     elseif not neverJumped then
@@ -297,8 +297,8 @@ local pattern = ""
 
 function preBackspace(bp)
     if bp ~= qfixPane then return true end
-    pattern = pattern:sub(1,-2)
-    micro.InfoBar():Message("search (backtick to cancel): "..pattern)
+    pattern = pattern:sub(1, -2)
+    micro.InfoBar():Message("search (backtick to cancel): " .. pattern)
     return false
 end
 
