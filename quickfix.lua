@@ -128,7 +128,6 @@ function jumpToFile(bp, args)
 
     local c = bp.Cursor
     local line = bp.Buf:Line(c.Y)
-    line = string.sub(line, c.X + 1)
     micro.Log("jump to " .. line)
 
     local arr = strings.Split(line, ":")
