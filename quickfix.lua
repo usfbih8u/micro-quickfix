@@ -384,4 +384,5 @@ end
 function init()
     config.MakeCommand("quickfix", quickfixEntry, qfixCompleter)
     config.AddRuntimeFile("quickfix", config.RTHelp, "help/quickfix.md")
+    config.AddRuntimeFile("quickfix", config.RTSyntax, "syntax/quickfix.yaml")
 end
