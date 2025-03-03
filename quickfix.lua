@@ -135,10 +135,10 @@ function jumpToFile(bp, _)
         return
     end
 
-    local rex = regexp.MustCompile("[^:]+:[0-9]+:[0-9]+:")
+    local rex = regexp.MustCompile("[^:]+:[0-9]+:[0-9]+:?")
     local fname = rex:FindString(line)
     if fname == "" then
-        rex = regexp.MustCompile("[^:]+:[0-9]+:")
+        rex = regexp.MustCompile("[^:]+:[0-9]+:?")
         fname = rex:FindString(line)
     end
     if fname == "" then
@@ -224,8 +224,8 @@ function jumpToEntry(bp, direction)
             local _, err = os.Stat(splits[1])
             if not err then -- 1st split is a file
                 local regexes = {
-                    "[^:]+:[0-9]+:[0-9]+:",
-                    "[^:]+:[0-9]+:",
+                    "[^:]+:[0-9]+:[0-9]+:?",
+                    "[^:]+:[0-9]+:?",
                     -- Avoid stop in errors/warnings without row and column
                     -- "[^:]+:", "[^ \t].*",
                 }
