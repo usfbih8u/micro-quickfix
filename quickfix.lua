@@ -330,10 +330,15 @@ function onRune(bp, r)
     local bufstart = buffer.Loc(0, 0)
     local bufend = buffer.Loc(0, 1000000)
     local from = buffer.Loc(c.X, c.Y)
-    local found, res, _ = bp.Buf:FindNext(pattern, bufstart, bufend, from, true, false)
-    if not res then return end
+    local buf = bp.Buf
+    local match, found, _ = buf:FindNext(pattern, bufstart, bufend, from, true, false)
+    if not found then return end
 
-    local loc = buffer.Loc(0, found[1].Y)
+    buf.LastSearch = pattern
+    buf.LastSearchRegex = false
+    buf.HighlightSearch = true
+
+    local loc = buffer.Loc(0, match[1].Y)
     c:GotoLoc(loc)
     bp:Relocate()
 end
