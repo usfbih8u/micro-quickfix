@@ -388,6 +388,16 @@ function quickfixEntry(bp, argsUserdata)
     local args = {}
     if opt == "exec" then
         for i = 2, #argsUserdata do table.insert(args, argsUserdata[i]) end
+        if #args == 0 then
+            local prompt = "quickfix execute> "
+            micro.InfoBar():Prompt(prompt, "", "quickfix-exec", nil, function(input, canceled)
+                if not canceled and input ~= "" then
+                    --let Micro parse the input into the array of arguments
+                    bp:HandleCommand("quickfix exec " .. input)
+                end
+            end)
+            return
+        end
     end
     cmd(bp, args)
 end
