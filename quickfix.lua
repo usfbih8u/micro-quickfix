@@ -20,6 +20,8 @@ function execExit(output, _)
         qfixPane:Quit()
     end
 
+    if output == "" then return end
+
     local b = buffer.NewBuffer(output, qfixName)
     b.Type.Scratch = true
     b.Type.Readonly = true
@@ -75,14 +77,14 @@ function execArgs(bp, args)
     cmd = strings.Replace(cmd, "{l}", tostring(c.Y + 1), 1)
     cmd = strings.Replace(cmd, "{c}", tostring(c.X + 1), 1)
 
-    micro.Log("fexec: " .. cmd)
-    micro.InfoBar():Message("running: " .. cmd)
+    micro.Log("quickfix exec: " .. cmd)
+    micro.InfoBar():Message("quickfix exec: " .. cmd)
     local s, err = shell.RunCommand(cmd)
     execExit(s, nil)
     if err ~= nil then
-        micro.InfoBar():Error(err:Error())
+        micro.InfoBar():Error("quickfix exec: " .. err:Error())
     else
-        micro.InfoBar():Message("")
+        micro.InfoBar():Message("quickfix exec: succeed")
     end
 end
 
