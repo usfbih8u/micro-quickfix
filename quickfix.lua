@@ -304,12 +304,12 @@ function preInsertNewline(bp)
 end
 
 function onRune(bp, r)
+    if bp ~= qfixPane then return end
     -- This maintains qfix as qfix, solving issues with buffer replacements
-    if qfixPane and qfixPane:Name() ~= qfixName then
+    if qfixPane:Name() ~= qfixName then
         qfixPane = nil
         return
     end
-    if bp ~= qfixPane then return end
 
     local s = tostring(r)
     if s == "`" then -- reset pattern
