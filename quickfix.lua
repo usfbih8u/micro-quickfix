@@ -22,6 +22,10 @@ local regexes = {
     "[^ \t].*",
 }
 
+local function log(...)
+    -- micro.Log("[quickfix]", unpack(arg))
+end
+
 function execExit(output, _)
     if qfixPane ~= nil then
         qfixPane:Quit()
@@ -43,7 +47,7 @@ end
 function execCurrentLine(bp)
     local c = bp.Cursor
     local cmd = bp.Buf:Line(c.Y)
-    micro.Log("fexec: " .. cmd)
+    log("quickfix exec: " .. cmd)
     if #cmd == 0 then
         micro.InfoBar():Error("current line is empty")
         return
@@ -84,7 +88,7 @@ function execArgs(bp, args)
     cmd = strings.Replace(cmd, "{l}", tostring(c.Y + 1), 1)
     cmd = strings.Replace(cmd, "{c}", tostring(c.X + 1), 1)
 
-    micro.Log("quickfix exec: " .. cmd)
+    log("quickfix exec: " .. cmd)
     micro.InfoBar():Message("quickfix exec: " .. cmd)
     local s, err = shell.RunCommand(cmd)
     execExit(s, nil)
@@ -130,7 +134,7 @@ function jumpToFile(bp, _)
 
     local c = bp.Cursor
     local line = bp.Buf:Line(c.Y)
-    micro.Log("jump to " .. line)
+    log("jump to " .. line)
 
     local arr = strings.Split(line, ":")
     if #arr == 0 then
@@ -160,11 +164,8 @@ function jumpToFile(bp, _)
 
     local plainfname = strings.Split(fname, ":")[1]
     local absfname = filepath.Abs(plainfname)
-
     local absfnameWithPos = absfname .. strings.TrimPrefix(fname, plainfname)
-
-    micro.Log("plainfname:", plainfname, "absfnameWithPos:", absfnameWithPos)
-
+    log("plainfname:", plainfname, "absfnameWithPos:", absfnameWithPos)
     micro.InfoBar():Message(fname)
 
     local tabs = micro.Tabs()
@@ -172,9 +173,9 @@ function jumpToFile(bp, _)
         for j = 1, #tabs.List[i].Panes do
             local panename = tabs.List[i].Panes[j]:Name()
             local absname = tabs.List[i].Panes[j].Buf.AbsPath
-            micro.Log("tab", i, "pane", i, "absname", absname)
+            log("tab", i, "pane", i, "absname", absname)
             if absfname == absname then
-                micro.Log("set active:", panename)
+                log("set active:", panename)
                 tabs:SetActive(i - 1)
                 tabs.List[i]:SetActive(j - 1)
                 tabs.List[i].Panes[j]:SetActive(true)
@@ -184,7 +185,7 @@ function jumpToFile(bp, _)
         end
     end
 
-    micro.Log("fname: " .. absfnameWithPos)
+    log("fname: " .. absfnameWithPos)
     qfixNeverJumped = false
     bp:HandleCommand("tab " .. absfnameWithPos)
     bp:Center()
@@ -250,13 +251,13 @@ function jumpToEntry(bp, direction)
 
     local plainfname = strings.Split(fname, ":")[1]
     local plainfnameWithPos = plainfname .. strings.TrimPrefix(fname, plainfname)
-    micro.Log("plainfname:", plainfname, "plainfnameWithPos:", plainfnameWithPos)
+    log("plainfname:", plainfname, "plainfnameWithPos:", plainfnameWithPos)
     micro.InfoBar():Message(fname)
 
     -- NOTE: If we are in the same tab as `qfixPane` and `fjump_next` or `fjump_prev` are
     -- used, then another tab is created to open the necessary buffers there. This way,
     -- the panes in the same tab as `qfixPane` are not modified.
-    micro.Log("fname: " .. plainfnameWithPos)
+    log("fname: " .. plainfnameWithPos)
     if qfixPane == micro.CurPane() or neverJumped then --same tab as `qfixPane`
         bp:HandleCommand("tab "..plainfnameWithPos)
     elseif not neverJumped then
@@ -320,7 +321,7 @@ function onRune(bp, r)
     end
 
     pattern = pattern .. s
-    micro.Log("pattern: " .. pattern)
+    log("pattern: " .. pattern)
     micro.InfoBar():Message("search (backtick to cancel): " .. pattern)
 
     local cursor = qfixPane.Cursor
