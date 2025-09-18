@@ -314,11 +314,11 @@ function onRune(bp, r)
         qfixPane = nil
         return
     end
-
     if bp ~= qfixPane then return end
 
     local s = tostring(r)
-    if s == "`" then
+    if s == "`" then -- reset pattern
+        qfixPane.Buf.HighlightSearch = false
         pattern = ""
         micro.InfoBar():Message("")
         return
@@ -328,21 +328,20 @@ function onRune(bp, r)
     micro.Log("pattern: " .. pattern)
     micro.InfoBar():Message("search (backtick to cancel): " .. pattern)
 
-    local c = bp.Cursor
-    local bufstart = buffer.Loc(0, 0)
-    local bufend = buffer.Loc(0, 1000000)
-    local from = buffer.Loc(c.X, c.Y)
-    local buf = bp.Buf
-    local match, found, _ = buf:FindNext(pattern, bufstart, bufend, from, true, false)
+    local cursor = qfixPane.Cursor
+    local from = buffer.Loc(cursor.X, cursor.Y)
+    local buf = qfixPane.Buf
+    local match, found, _ = buf:FindNext(
+        pattern, buf:Start(), buf:End(), from, --[[down]]true, --[[useRegex]] false
+    )
     if not found then return end
 
     buf.LastSearch = pattern
     buf.LastSearchRegex = false
     buf.HighlightSearch = true
 
-    local loc = buffer.Loc(0, match[1].Y)
-    c:GotoLoc(loc)
-    bp:Relocate()
+    cursor:GotoLoc(buffer.Loc(0, match[1].Y))
+    qfixPane:Relocate()
 end
 
 local qfixCmds = {
