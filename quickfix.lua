@@ -346,6 +346,10 @@ local qfixCmds = {
     ["jump"] = jumpToFile,
     ["next"] = jumpToNextEntry,
     ["prev"] = jumpToPrevEntry,
+    ["help"] = function (bp, _)
+        assert(bp, "bp MUST NOT be nil")
+        bp:HandleCommand("help quickfix")
+    end,
 }
 
 local function qfixCompleter(buf)

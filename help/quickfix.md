@@ -7,7 +7,7 @@ qfix pane has incremental search as you type. Use backtick to reset the search.
 
 You can delete the search with `Backspace` or reset it completely with `DeleteWordLeft`.
 
-Commands:
+## Options
 
 quickfix exec [args]
 
@@ -34,6 +34,10 @@ quickfix prev
 quickfix next
 
     Jumps to the location of the next entry in the qfix pane.
+
+quickfix help
+
+    Opens **this** document in a horizontal split.
 
 ## Example bindings
 
