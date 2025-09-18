@@ -7,7 +7,7 @@ local shell = import("micro/shell")
 local strings = import("strings")
 local regexp = import("regexp")
 local filepath = import("filepath")
-local os = import("os")
+local go_os = import("os")
 
 local qfixName = "qfix"
 local qfixPane = nil
@@ -131,7 +131,7 @@ function jumpToFile(bp, _)
         return
     end
 
-    local _, err = os.Stat(arr[1])
+    local _, err = go_os.Stat(arr[1])
     if err ~= nil then
         micro.InfoBar():Error("no filename at current pos")
         return
@@ -223,7 +223,7 @@ function jumpToEntry(bp, direction)
         local splits = strings.SplitN(line, ":", 2)
 
         if #splits > 0 then -- line candidate
-            local _, err = os.Stat(splits[1])
+            local _, err = go_os.Stat(splits[1])
             if not err then -- 1st split is a file
                 local regexes = {
                     "[^:]+:[0-9]+:[0-9]+:?",
