@@ -12,8 +12,7 @@ local go_os = import("os")
 local qfixName = "qfix"
 local qfixPane = nil
 local qfixNeverJumped = false
-local tab = nil
-local active = 0
+local qfixPaneTabIdx = 0
 
 local regexes = {
     "[^:]+:[0-9]+:[0-9]+:?",
@@ -39,9 +38,8 @@ function execExit(output, _)
     micro.CurPane():HSplitIndex(b, true)
     qfixPane = micro.CurPane()
     qfixNeverJumped = true
-    tab = micro.CurTab()
     local tabs = micro.Tabs()
-    active = tabs:Active()
+    qfixPaneTabIdx = tabs:Active()
 end
 
 function execCurrentLine(bp)
@@ -124,11 +122,9 @@ function jumpToFile(bp, _)
     local p = micro.CurPane()
     if p ~= nil then name = p:Name() end
 
-    if name ~= qfixName and qfixPane then
-        qfixPane:SetActive(false)
-        tab:SetActive(1)
-        local tabs = micro.Tabs()
-        tabs:SetActive(active)
+    if name ~= qfixName and qfixPane then -- return to qfixPane
+        micro.Tabs():SetActive(qfixPaneTabIdx)
+        qfixPane:SetActive(true)
         return
     end
 
