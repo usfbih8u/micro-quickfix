@@ -15,6 +15,13 @@ local qfixNeverJumped = false
 local tab = nil
 local active = 0
 
+local regexes = {
+    "[^:]+:[0-9]+:[0-9]+:?",
+    "[^:]+:[0-9]+:?",
+    "[^:]+:",
+    "[^ \t].*",
+}
+
 function execExit(output, _)
     if qfixPane ~= nil then
         qfixPane:Quit()
@@ -137,13 +144,6 @@ function jumpToFile(bp, _)
         return
     end
 
-    local regexes = {
-        "[^:]+:[0-9]+:[0-9]+:?",
-        "[^:]+:[0-9]+:?",
-        "[^:]+:",
-        "[^ \t].*",
-    }
-
     local fname = ""
     for _, regex in ipairs(regexes) do
         fname = regexp.MustCompile(regex):FindString(line)
@@ -225,14 +225,9 @@ function jumpToEntry(bp, direction)
         if #splits > 0 then -- line candidate
             local _, err = go_os.Stat(splits[1])
             if not err then -- 1st split is a file
-                local regexes = {
-                    "[^:]+:[0-9]+:[0-9]+:?",
-                    "[^:]+:[0-9]+:?",
-                    -- Avoid stop in errors/warnings without row and column
-                    -- "[^:]+:", "[^ \t].*",
-                }
-
-                for j = 1, #regexes do
+                -- NOTE: (-2) Ignore the last 2 regexes to avoid to stop in
+                -- errors/warnings without row and column
+                for j = 1, #regexes - 2 do
                     local rex = regexp.MustCompile(regexes[j])
                     fname = rex:FindString(line)
                     if fname ~= "" then
