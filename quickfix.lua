@@ -371,27 +371,27 @@ local function qfixCompleter(buf)
 end
 
 function quickfixEntry(bp, argsUserdata)
-    local opt = argsUserdata[1]
-    local cmd = qfixCmds[opt]
-    if not cmd then
-        micro.InfoBar():Error("quickfix: Unknown command: " .. opt)
+    if #argsUserdata == 0 then
+        local prompt = "quickfix execute> "
+        micro.InfoBar():Prompt(prompt, "", "quickfix-exec", nil, function(input, canceled)
+            if not canceled then
+                -- if input == "" then execLine() else execArgs()
+                bp:HandleCommand("quickfix exec " .. input)
+            end
+        end)
         return
     end
 
-    -- WARN: args is only used with `exec`
+    local opt = argsUserdata[1]
+    local cmd = qfixCmds[opt]
+    if not cmd then
+        micro.InfoBar():Error("quickfix: unknown option: " .. opt)
+        return
+    end
+
     local args = {}
-    if opt == "exec" then
+    if opt == "exec" then -- args is only used with `exec`
         for i = 2, #argsUserdata do table.insert(args, argsUserdata[i]) end
-        if #args == 0 then
-            local prompt = "quickfix execute> "
-            micro.InfoBar():Prompt(prompt, "", "quickfix-exec", nil, function(input, canceled)
-                if not canceled and input ~= "" then
-                    --let Micro parse the input into the array of arguments
-                    bp:HandleCommand("quickfix exec " .. input)
-                end
-            end)
-            return
-        end
     end
     cmd(bp, args)
 end
