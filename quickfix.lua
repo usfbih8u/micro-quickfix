@@ -137,23 +137,23 @@ function jumpToFile(bp, _)
         return
     end
 
-    local rex = regexp.MustCompile("[^:]+:[0-9]+:[0-9]+:?")
-    local fname = rex:FindString(line)
-    if fname == "" then
-        rex = regexp.MustCompile("[^:]+:[0-9]+:?")
-        fname = rex:FindString(line)
-    end
-    if fname == "" then
-        rex = regexp.MustCompile("[^:]+:")
-        fname = rex:FindString(line)
-    end
-    if fname == "" then
-        rex = regexp.MustCompile("[^ \t].*")
-        fname = rex:FindString(line)
-    end
-    fname = strings.TrimSuffix(fname, ":")
+    local regexes = {
+        "[^:]+:[0-9]+:[0-9]+:?",
+        "[^:]+:[0-9]+:?",
+        "[^:]+:",
+        "[^ \t].*",
+    }
 
-    if #fname == 0 then
+    local fname = ""
+    for _, regex in ipairs(regexes) do
+        fname = regexp.MustCompile(regex):FindString(line)
+        if fname ~= "" then
+            fname = strings.TrimSuffix(fname, ":")
+            break
+        end
+    end
+
+    if fname == "" then
         micro.InfoBar():Error("no filename at current pos")
         return
     end
