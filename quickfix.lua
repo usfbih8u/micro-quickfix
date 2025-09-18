@@ -9,10 +9,12 @@ local regexp = import("regexp")
 local filepath = import("filepath")
 local go_os = import("os")
 
-local qfixName = "qfix"
-local qfixPane = nil
-local qfixNeverJumped = false
-local qfixPaneTabIdx = 0
+local qfix = {
+    paneName = "qfix",
+    pane = nil,
+    neverJumped = false,
+    paneTabIdx = 0,
+}
 
 local regexes = {
     "[^:]+:[0-9]+:[0-9]+:?",
@@ -26,20 +28,19 @@ local function log(...)
 end
 
 function execExit(output, _)
-    if qfixPane ~= nil then
-        qfixPane:Quit()
+    if qfix.pane ~= nil then
+        qfix.pane:Quit()
     end
 
     if output == "" then return end
 
-    local b = buffer.NewBuffer(output, qfixName)
+    local b = buffer.NewBuffer(output, qfix.paneName)
     b.Type.Scratch = true
     b.Type.Readonly = true
     micro.CurPane():HSplitIndex(b, true)
-    qfixPane = micro.CurPane()
-    qfixNeverJumped = true
-    local tabs = micro.Tabs()
-    qfixPaneTabIdx = tabs:Active()
+    qfix.pane = micro.CurPane()
+    qfix.neverJumped = true
+    qfix.paneTabIdx = micro.Tabs():Active()
 end
 
 function execCurrentLine(bp)
@@ -103,10 +104,10 @@ function execLine(bp, args)
     if p ~= nil then
         name = p:Name()
     end
-    if name == qfixName then
-        qfixPane:Quit()
-        qfixPane = nil
-        qfixNeverJumped = false
+    if name == qfix.paneName then -- close and reset `qfix`
+        qfix.pane:Quit()
+        qfix.pane = nil
+        qfix.neverJumped = false
         return
     end
 
@@ -122,9 +123,9 @@ function jumpToFile(bp, _)
     local p = micro.CurPane()
     if p ~= nil then name = p:Name() end
 
-    if name ~= qfixName and qfixPane then -- return to qfixPane
-        micro.Tabs():SetActive(qfixPaneTabIdx)
-        qfixPane:SetActive(true)
+    if name ~= qfix.paneName and qfix.pane then -- return to qfix.pane
+        micro.Tabs():SetActive(qfix.paneTabIdx)
+        qfix.pane:SetActive(true)
         return
     end
 
@@ -182,7 +183,7 @@ function jumpToFile(bp, _)
     end
 
     log("fname: " .. absfnameWithPos)
-    qfixNeverJumped = false
+    qfix.neverJumped = false
     bp:HandleCommand("tab " .. absfnameWithPos)
     bp:Center()
 end
@@ -190,20 +191,20 @@ end
 local DIRECTION = { PREV = -1, NEXT = 1 }
 
 function jumpToEntry(bp, direction)
-    if qfixPane == nil then
+    if qfix.pane == nil then
         micro.InfoBar():Error("quickfix: no qfix pane")
         return
     end
 
     local limit
     if     direction == DIRECTION.PREV then limit = -1
-    elseif direction == DIRECTION.NEXT then limit = qfixPane.Buf:LinesNum()
+    elseif direction == DIRECTION.NEXT then limit = qfix.pane.Buf:LinesNum()
     else error("quickfix: invalid direction for jumpToEntry") end
 
-    local cursor = qfixPane.Cursor
-    local neverJumped = qfixNeverJumped
-    local startingLine = qfixNeverJumped == true and cursor.Y or cursor.Y + direction
-    qfixNeverJumped = false -- set to false now in case we return early.
+    local cursor = qfix.pane.Cursor
+    local neverJumped = qfix.neverJumped
+    local startingLine = qfix.neverJumped == true and cursor.Y or cursor.Y + direction
+    qfix.neverJumped = false -- set to false now in case we return early.
 
     if startingLine == limit then
         if direction == DIRECTION.PREV then
@@ -216,7 +217,7 @@ function jumpToEntry(bp, direction)
     local fname = ""
     for i = startingLine, limit, direction do
         cursor.Y = i -- always update
-        local line = qfixPane.Buf:Line(i)
+        local line = qfix.pane.Buf:Line(i)
         local splits = strings.SplitN(line, ":", 2)
 
         if #splits > 0 then -- line candidate
@@ -252,9 +253,9 @@ function jumpToEntry(bp, direction)
 
     -- NOTE: If we are in the same tab as `qfixPane` and `fjump_next` or `fjump_prev` are
     -- used, then another tab is created to open the necessary buffers there. This way,
-    -- the panes in the same tab as `qfixPane` are not modified.
+    -- the panes in the same tab as `qfix.pane` are not modified.
     log("fname: " .. plainfnameWithPos)
-    if qfixPane == micro.CurPane() or neverJumped then --same tab as `qfixPane`
+    if qfix.pane == micro.CurPane() or neverJumped then --same tab as `qfix.pane`
         bp:HandleCommand("tab "..plainfnameWithPos)
     elseif not neverJumped then
         if bp.Buf.Path == plainfname then
@@ -271,16 +272,16 @@ function jumpToPrevEntry(bp, _) jumpToEntry(bp, DIRECTION.PREV) end
 function jumpToNextEntry(bp, _) jumpToEntry(bp, DIRECTION.NEXT) end
 
 function onQuit(p)
-    if p == qfixPane then
-        qfixPane = nil
-        qfixNeverJumped = false
+    if p == qfix.pane then
+        qfix.pane = nil
+        qfix.neverJumped = false
     end
 end
 
 local pattern = ""
 
 function preBackspace(bp)
-    if bp ~= qfixPane then return true end
+    if bp ~= qfix.pane then return true end
     pattern = pattern:sub(1, -2)
     micro.InfoBar():Message("search (backtick to cancel): " .. pattern)
     return false
@@ -288,29 +289,29 @@ end
 
 -- Resets the pattern directly; it does not perform `DeleteWordLeft`.
 function preDeleteWordLeft(bp)
-    if bp ~= qfixPane then return true end
+    if bp ~= qfix.pane then return true end
     pattern = ""
     micro.InfoBar():Message("search (backtick to cancel): ")
     return false
 end
 
 function preInsertNewline(bp)
-    if bp ~= qfixPane then return true end
+    if bp ~= qfix.pane then return true end
     jumpToFile(bp)
     return false
 end
 
 function onRune(bp, r)
-    if bp ~= qfixPane then return end
+    if bp ~= qfix.pane then return end
     -- This maintains qfix as qfix, solving issues with buffer replacements
-    if qfixPane:Name() ~= qfixName then
-        qfixPane = nil
+    if qfix.pane:Name() ~= qfix.paneName then
+        qfix.pane = nil
         return
     end
 
     local s = tostring(r)
     if s == "`" then -- reset pattern
-        qfixPane.Buf.HighlightSearch = false
+        qfix.pane.Buf.HighlightSearch = false
         pattern = ""
         micro.InfoBar():Message("")
         return
@@ -320,9 +321,9 @@ function onRune(bp, r)
     log("pattern: " .. pattern)
     micro.InfoBar():Message("search (backtick to cancel): " .. pattern)
 
-    local cursor = qfixPane.Cursor
+    local cursor = qfix.pane.Cursor
     local from = buffer.Loc(cursor.X, cursor.Y)
-    local buf = qfixPane.Buf
+    local buf = qfix.pane.Buf
     local match, found, _ = buf:FindNext(
         pattern, buf:Start(), buf:End(), from, --[[down]]true, --[[useRegex]] false
     )
@@ -333,7 +334,7 @@ function onRune(bp, r)
     buf.HighlightSearch = true
 
     cursor:GotoLoc(buffer.Loc(0, match[1].Y))
-    qfixPane:Relocate()
+    qfix.pane:Relocate()
 end
 
 local qfixCmds = {
