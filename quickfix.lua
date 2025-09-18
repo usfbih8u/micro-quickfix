@@ -123,7 +123,8 @@ function jumpToFile(bp, _)
     local p = micro.CurPane()
     if p ~= nil then name = p:Name() end
 
-    if name ~= qfix.paneName and qfix.pane then -- return to qfix.pane
+    if name ~= qfix.paneName and qfix.pane then
+        micro.InfoBar():Message("quickfix jump: back to qfix pane" )
         micro.Tabs():SetActive(qfix.paneTabIdx)
         qfix.pane:SetActive(true)
         return
@@ -163,7 +164,7 @@ function jumpToFile(bp, _)
     local absfname = filepath.Abs(plainfname)
     local absfnameWithPos = absfname .. strings.TrimPrefix(fname, plainfname)
     log("plainfname:", plainfname, "absfnameWithPos:", absfnameWithPos)
-    micro.InfoBar():Message(fname)
+    micro.InfoBar():Message("quickfix jump: " .. fname)
 
     local tabs = micro.Tabs()
     for i = 1, #tabs.List do
@@ -207,9 +208,10 @@ function jumpToEntry(bp, direction)
     qfix.neverJumped = false -- set to false now in case we return early.
 
     if startingLine == limit then
-        if direction == DIRECTION.PREV then
-             micro.InfoBar():Error("quickfix: no previous entry in quickfix list")
-        else micro.InfoBar():Error("quickfix: no next entry in quickfix list") end
+        micro.InfoBar():Error(
+            ("quickfix: no %s entry in quickfix list"):format(
+                direction == DIRECTION.PREV and "previous" or "next"
+        ))
         return
     end
 
@@ -238,18 +240,20 @@ function jumpToEntry(bp, direction)
         end
     end
 
-    -- No file was found inside the loop
-    if fname == "" then
-        if direction == DIRECTION.PREV then
-             micro.InfoBar():Error("quickfix: no previous entry in quickfix list")
-        else micro.InfoBar():Error("quickfix: no next entry in quickfix list") end
+    if fname == "" then -- No file was found inside the loop
+        micro.InfoBar():Error(
+            ("quickfix: no %s entry in quickfix list"):format(
+                direction == DIRECTION.PREV and "previous" or "next"
+        ))
         return
     end
 
     local plainfname = strings.Split(fname, ":")[1]
     local plainfnameWithPos = plainfname .. strings.TrimPrefix(fname, plainfname)
     log("plainfname:", plainfname, "plainfnameWithPos:", plainfnameWithPos)
-    micro.InfoBar():Message(fname)
+    micro.InfoBar():Message(
+        ("quickfix %s: %s"):format(direction == DIRECTION.PREV and "prev" or "next", fname)
+    )
 
     -- NOTE: If we are in the same tab as `qfixPane` and `fjump_next` or `fjump_prev` are
     -- used, then another tab is created to open the necessary buffers there. This way,
