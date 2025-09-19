@@ -87,9 +87,31 @@ function execArgs(bp, args)
     cmd = strings.Replace(cmd, "{l}", tostring(c.Y + 1), 1)
     cmd = strings.Replace(cmd, "{c}", tostring(c.X + 1), 1)
 
-    log("quickfix exec: " .. cmd)
-    micro.InfoBar():Message("quickfix exec: " .. cmd)
-    local s, err = shell.RunCommand(cmd)
+    local s, err
+    local microShellOpt = "quickfix.shellOpt"
+    local shellOpt = config.GetGlobalOption(microShellOpt)
+    if type(shellOpt) == "string" and shellOpt ~= "" then --not empty string
+        local cmdMsg = ("quickfix exec: (%s) %s"):format(shellOpt, cmd)
+        micro.InfoBar():Message(cmdMsg) -- log command before execute
+        log(cmdMsg)
+        local shellCmd = {}
+        for word in shellOpt:gmatch("%S+") do table.insert(shellCmd, word) end
+        table.insert(shellCmd, cmd) -- NOTE: exec(unpack(shellCmd), cmd) doesn't work
+        s, err = shell.ExecCommand(unpack(shellCmd))
+
+    elseif shellOpt == nil then
+        local cmdMsg = "quickfix exec: " .. cmd
+        micro.InfoBar():Message(cmdMsg)
+        log(cmdMsg)
+        s, err = shell.RunCommand(cmd)
+
+    else
+        micro.InfoBar()
+            :Error(("quickfix: invalid '%s'; MUST be a non-empty string")
+            :format(microShellOpt))
+        return
+    end
+
     execExit(s, nil)
     if err ~= nil then
         micro.InfoBar():Error("quickfix exec: " .. err:Error())

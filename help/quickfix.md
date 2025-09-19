@@ -39,6 +39,20 @@ quickfix help
 
     Opens **this** document in a horizontal split.
 
+## Plugin Settings
+
+quickfix.shellOpt (string)
+
+    Allows you to declare the shell for executing the commands in `execArgs()`.
+    By default, the command passed to the plugin is executed as it is provided;
+    therefore, shell expansions, for example, are not performed. However, if
+    "bash -c" is set as the option, the command will be executed as
+    "bash -c [cmd]".
+
+    Example: > quickfix exec grep -Hn {w} *.go
+    By default, "*" will not be expanded, but if you use "bash -c" as `shellOpt`,
+    it will.
+
 ## Example bindings
 
 Jump to the file and back to qfix pane:
@@ -49,6 +63,6 @@ Exec current line:
 
 	"F9": "command:quickfix exec"
 
-Grep for word under cursor:
+Grep for the word under the cursor (requires [shellOpt](#plugin-settings) to enable shell expansion):
 
-	"Alt-i": "command:quickfix exec grep {w} *.go"
+	"Alt-i": "command:quickfix exec grep -Hn {w} *.go"
