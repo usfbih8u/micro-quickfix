@@ -147,8 +147,11 @@ function jumpToFile(bp, _)
 
     if name ~= qfix.paneName and qfix.pane then
         micro.InfoBar():Message("quickfix jump: back to qfix pane" )
-        micro.Tabs():SetActive(qfix.paneTabIdx)
-        qfix.pane:SetActive(true)
+        local tabs = micro.Tabs()
+        local qfixTab = qfix.pane:Tab()
+        local qfixPaneIdx = qfixTab:GetPane(qfix.pane:ID())
+        tabs:SetActive(qfix.paneTabIdx)
+        qfixTab:SetActive(qfixPaneIdx)
         return
     end
 
