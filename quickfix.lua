@@ -9,6 +9,7 @@ local regexp = import("regexp")
 local filepath = import("filepath")
 local go_os = import("os")
 
+local promptName = "quickfix-exec"
 local qfixPaneName = "qfix"
 
 local qfix = {
@@ -139,6 +140,16 @@ function execLine(bp, args)
     else
         execCurrentLine(bp)
     end
+end
+
+---Run the last command executed from quickfix.
+---NOTE: Implemented because command:quickfix,{CursorUp,HistoryUp} dont work as I
+---wanted: execute the command (opens the prompt for quickfix) and then history up
+function reRun(bp, _)
+    local qfixCmds = micro.InfoBar().History[promptName]
+    local lastCommand = qfixCmds[#qfixCmds]
+    log(lastCommand)
+    bp:HandleCommand("quickfix exec " .. lastCommand)
 end
 
 function jumpToFile(bp, _)
@@ -369,6 +380,7 @@ end
 
 local qfixCmds = {
     ["exec"] = execLine,
+    ["rerun"] = reRun,
     ["jump"] = jumpToFile,
     ["next"] = jumpToNextEntry,
     ["prev"] = jumpToPrevEntry,
@@ -407,7 +419,7 @@ end
 function quickfixEntry(bp, argsUserdata)
     if #argsUserdata == 0 then
         local prompt = "quickfix execute> "
-        micro.InfoBar():Prompt(prompt, "", "quickfix-exec", nil, function(input, canceled)
+        micro.InfoBar():Prompt(prompt, "", promptName, nil, function(input, canceled)
             if not canceled then
                 -- if input == "" then execLine() else execArgs()
                 bp:HandleCommand("quickfix exec " .. input)
