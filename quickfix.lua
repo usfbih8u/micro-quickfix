@@ -9,8 +9,9 @@ local regexp = import("regexp")
 local filepath = import("filepath")
 local go_os = import("os")
 
+local qfixPaneName = "qfix"
+
 local qfix = {
-    paneName = "qfix",
     pane = nil,
     neverJumped = false,
     paneTabIdx = 0,
@@ -34,7 +35,7 @@ function execExit(output, _)
 
     if output == "" then return end
 
-    local b = buffer.NewBuffer(output, qfix.paneName)
+    local b = buffer.NewBuffer(output, qfixPaneName)
     b.Type.Scratch = true
     b.Type.Readonly = true
     micro.CurPane():HSplitIndex(b, true)
@@ -126,7 +127,7 @@ function execLine(bp, args)
     if p ~= nil then
         name = p:Name()
     end
-    if name == qfix.paneName then -- close and reset `qfix`
+    if name == qfixPaneName then -- close and reset `qfix`
         qfix.pane:Quit()
         qfix.pane = nil
         qfix.neverJumped = false
@@ -145,7 +146,7 @@ function jumpToFile(bp, _)
     local p = micro.CurPane()
     if p ~= nil then name = p:Name() end
 
-    if name ~= qfix.paneName and qfix.pane then
+    if name ~= qfixPaneName and qfix.pane then
         micro.InfoBar():Message("quickfix jump: back to qfix pane" )
         local tabs = micro.Tabs()
         local qfixTab = qfix.pane:Tab()
@@ -333,7 +334,7 @@ end
 function onRune(bp, r)
     if bp ~= qfix.pane then return end
     -- This maintains qfix as qfix, solving issues with buffer replacements
-    if qfix.pane:Name() ~= qfix.paneName then
+    if qfix.pane:Name() ~= qfixPaneName then
         qfix.pane = nil
         return
     end
