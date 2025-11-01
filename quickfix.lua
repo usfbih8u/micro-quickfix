@@ -8,6 +8,7 @@ local strings = import("strings")
 local regexp = import("regexp")
 local filepath = import("filepath")
 local go_os = import("os")
+local time = import("time")
 
 local promptName = "quickfix-exec"
 local qfixPaneName = "qfix"
@@ -89,7 +90,7 @@ function execArgs(bp, args)
     cmd = strings.Replace(cmd, "{l}", tostring(c.Y + 1), 1)
     cmd = strings.Replace(cmd, "{c}", tostring(c.X + 1), 1)
 
-    local s, err
+    local s, err, secs_elapsed
     local microShellOpt = "quickfix.shellOpt"
     local shellOpt = config.GetGlobalOption(microShellOpt)
     if type(shellOpt) == "string" and shellOpt ~= "" then --not empty string
@@ -99,13 +100,17 @@ function execArgs(bp, args)
         local shellCmd = {}
         for word in shellOpt:gmatch("%S+") do table.insert(shellCmd, word) end
         table.insert(shellCmd, cmd) -- NOTE: exec(unpack(shellCmd), cmd) doesn't work
+        local start = time.Now()
         s, err = shell.ExecCommand(unpack(shellCmd))
+        secs_elapsed = time.Since(start)/time.Second
 
     elseif shellOpt == nil then
         local cmdMsg = "quickfix exec: " .. cmd
         micro.InfoBar():Message(cmdMsg)
         log(cmdMsg)
+        local start = time.Now()
         s, err = shell.RunCommand(cmd)
+        secs_elapsed = time.Since(start)/time.Second
 
     else
         micro.InfoBar()
@@ -116,9 +121,9 @@ function execArgs(bp, args)
 
     execExit(s, nil)
     if err ~= nil then
-        micro.InfoBar():Error("quickfix exec: " .. err:Error())
+        micro.InfoBar():Error(("quickfix %s in %.3fs"):format(err:Error(), secs_elapsed))
     else
-        micro.InfoBar():Message("quickfix exec: succeed")
+        micro.InfoBar():Message(("quickfix exec: succeed in %.3fs"):format(secs_elapsed))
     end
 end
 
