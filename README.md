@@ -1,5 +1,7 @@
 # Quickfix plugin for micro editor
 
+> ❗ Fork from [original plugin](https://github.com/serge-v/micro-quickfix) by @serge-v.
+
 Quickfix is a plugin to speedup edit-make-edit development cycle.
 It is similar to quickfix window in VIM editor.
 
